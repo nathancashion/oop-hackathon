@@ -1,5 +1,11 @@
 import requests
-from llama_parse import LlamaParse
+try:
+    from llama_parse import LlamaParse
+except ImportError:
+    import subprocess
+    subprocess.check_call(["pip", "install", "llama-parse"])
+    from llama_parse import LlamaParse
+import os
 
 LLM_MODELS = {}
 
@@ -29,13 +35,13 @@ def sync_extract_report_from_pdf(data_file_name, output_format="markdown", optio
         output_format: Data format of the output.
         options: Parameters that can be configurable for the extraction report.
     """
-    # bring in deps
+    # Prefer environment variable LLAMA_CLOUD_API_KEY if available
+    api_key = LLM_MODELS.get(options.get('model', 'llamaindex'), {}).get('key') or os.getenv("LLAMA_CLOUD_API_KEY", "")
 
     parser = LlamaParse(
-        api_key=LLM_MODELS[options['model']]['key'],  # can also be set in your env as LLAMA_CLOUD_API_KEY
+        api_key=api_key,  # can also be set in your env as LLAMA_CLOUD_API_KEY
         result_type=output_format  # "markdown" and "text" are available
     )
 
     documents = parser.load_data(data_file_name)
     return documents[0].text
-
